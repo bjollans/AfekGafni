@@ -41,14 +41,14 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	
 	public int startCandidate() throws RemoteException {
 		System.out.println("\n");
-		System.out.println("START CANDIDATE");
+		System.out.println("START CANDIDATE PROCESS");
 		
 		return 0;
 	}
 
-	public int sendID(int level, UUID id) throws RemoteException {
+	public int startOrdinary(int level, UUID id) throws RemoteException {
 		System.out.println("\n");
-		System.out.println("SENDING ID to nodes");
+		System.out.println("START ORDINARY PROCESS");
 		
 		return 0;
 	}
