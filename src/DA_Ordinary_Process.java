@@ -4,11 +4,10 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.UUID;
 
-public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
+public class DA_Ordinary_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	
-	private final UUID id = UUID.randomUUID();
+	private Node node;
 	private int level = -1;
 	private static final long serialVersionUID = 6384248030531941625L;
 	public int number; 
@@ -17,18 +16,17 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private int[] vectorClock = new int[3];
 	private static final String NAMING = "proc";
 
-	protected DA_Process(int n){
+	protected DA_Process(int n, Node node){
 		super();
-		number = n;
+		this.number = n;
+		this.node = node;
 	}
 
-	public void createProcesses(String[] ipAddresses) throws RemoteException{
+	public void createProcesses(Node[] nodes) throws RemoteException{
 		try {
 			rp = new DA_Process_RMI[ipAddresses.length];
 			for(int i=0; i<rp.length;i++){
-				int procNum = i;
-				if(procNum >=number) procNum++;
-				rp[i]=(DA_Process_RMI)Naming.lookup("rmi://"+ipAddresses[i]+"/"+NAMING+index);
+				rp[i]=(DA_Process_RMI)Naming.lookup();
 			}
 		} catch (MalformedURLException mue){
 			System.out.println("Your URL is malformed!");
@@ -51,14 +49,9 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		return vectorClock;
 	}
 
-	public boolean receiveMessage(int level, UUID id) throws RemoteException {
-		long foreignId = idToLong(id);
-		long ownId = idToLong(this.id);
+	public boolean receiveMessage(int level, Node foreignNode) throws RemoteException {
+		//TODO
 		return false;
-	}
-
-	public long idToLong(UUID id){
-		return id.getLeastSignificantBits();
 	}
 
 	private void setVectorClock(int [] newVector) {
