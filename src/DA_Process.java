@@ -42,7 +42,13 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		}
 	}
 	
+	private boolean isOtherPartReady(){
+		//check if other part is readz, the two parts are candidate and ordinary part
+		return false; //or true
+	}
+	
 	private void synchronize(){
+		if(!isOtherPartReady()) return;
 		ready = true;
 		for(DA_Process_RMI process: rp){
 			while(!process.isReady()){
