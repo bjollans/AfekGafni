@@ -9,6 +9,7 @@ import java.util.UUID;
 public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	
 	private final UUID id = UUID.randomUUID();
+	private UUID ownerID = id;
 	private Node node;
 	private int level = -1;
 	private static final long serialVersionUID = 6384248030531941625L;
@@ -18,6 +19,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private int[] vectorClock = new int[3];
 	private static final String NAMING = "proc";
 	private boolean elected = false;
+	private boolean ready= true;
 
 	protected DA_Process(int n) throws RemoteException{
 		super();
@@ -40,29 +42,57 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		}
 	}
 	
+	private void synchronize(){
+		ready = true;
+		for(DA_Process_RMI process: rp){
+			while(!process.isReady()){
+				long time = System.currentTimeMillis();
+				while(System.currentTimeMillis()-time <1000){}
+			}
+		}
+		ready = false;
+	}
+	
+	public boolean isReady(){
+		return ready;
+	}
+	
 	public int startCandidate() throws RemoteException {
 		System.out.println("\n");
 		System.out.println("START CANDIDATE PROCESS");
 		ArrayList<DA_Process_RMI> e = new ArrayList<DA_Process_RMI(Arrays.asList(rp));
 		while(true){
+			synchronize();
 			if(level%2==0){
 				elected = true;
 				return 0;
 			}
 			else{
-				int k = Math.min(Math.pow(2,level/2),e.size())
-				ArrayList<DA_Process_RMI> e2 = 
+				int k = Math.min(Math.pow(2,level/2),e.size());
+				ArrayList<DA_Process_RMI> e2 = null;
 			}
 		}
 		
 		return 0;
 	}
 
-	public int startOrdinary(int level, UUID id) throws RemoteException {
+	public int startOrdinary(int candidateLevel, UUID candidateID) throws RemoteException {
 		System.out.println("\n");
 		System.out.println("START ORDINARY PROCESS");
 		
-		return 0;
+		if (candidateLevel<level){
+			return 0;
+		}else{
+			if(idToLong(candidateID)<idToLong(ownerID)){
+				return 0;
+			}
+			else{
+				level = candidateLevel;
+				ownerID=candidateID;
+			}
+		}
+		
+		return 1;
 	}
 
 	private long idToLong(UUID id){
