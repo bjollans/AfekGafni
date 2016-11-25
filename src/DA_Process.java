@@ -38,29 +38,19 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			createProcesses(addresses);
 		}
 	}
+	
+	public int startCandidate() throws RemoteException {
+		System.out.println("\n");
+		System.out.println("START CANDIDATE");
+		
+		return 0;
+	}
 
-	public int sendID(String message) throws RemoteException {
+	public int sendID(int level, UUID id) throws RemoteException {
 		System.out.println("\n");
 		System.out.println("SENDING ID to nodes");
 		
 		return 0;
-	}
-
-	public boolean receiveACK(int level, Node foreignNode) throws RemoteException {
-		System.out.println("\n");
-		System.out.println("RECEIVED ACK: process captured");
-		return false;
-	}
-	public int receiveMessage(String message) throws RemoteException {
-		System.out.println("\n");
-		System.out.println("RECEIVING ID from Candidate");
-		
-		return 0;
-	}
-	
-	public boolean sendACK(int level, Node foreignNode) throws RemoteException {
-		System.out.println("SEND ACK to Candidate");
-		return false;
 	}
 
 	private void setVectorClock(int [] newVector) {

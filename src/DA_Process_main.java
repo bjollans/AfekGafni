@@ -9,13 +9,12 @@ public class DA_Process_main {
 		int registryPort = Integer.parseInt(args[0]);
 		int processNumber = Integer.parseInt(args[1]);
 		
-		ArrayList<Node> addresses = new ArrayList<Node>();
+		ArrayList<String> addresses = new ArrayList<String>();
 
 		int processID = 1;
 		for (int i = 2; i < args.length; i++) {
 			if(processID==processNumber) processID++;
-			Node newNode = new Node(processID,args[i]);
-			addresses.add(newNode);
+			addresses.add("rmi://"+args[i]+"/proc"+processID);
 			processID++;
 		}
 
