@@ -17,6 +17,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	public static final int FACTOR = 1;
 	private int[] vectorClock = new int[3];
 	private static final String NAMING = "proc";
+	private boolean elected = false;
 
 	protected DA_Process(int n) throws RemoteException{
 		super();
@@ -42,6 +43,17 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	public int startCandidate() throws RemoteException {
 		System.out.println("\n");
 		System.out.println("START CANDIDATE PROCESS");
+		ArrayList<DA_Process_RMI> e = new ArrayList<DA_Process_RMI(Arrays.asList(rp));
+		while(true){
+			if(level%2==0){
+				elected = true;
+				return 0;
+			}
+			else{
+				int k = Math.min(Math.pow(2,level/2),e.size())
+				ArrayList<DA_Process_RMI> e2 = 
+			}
+		}
 		
 		return 0;
 	}
