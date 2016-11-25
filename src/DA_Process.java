@@ -53,6 +53,10 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		return 0;
 	}
 
+	private long idToLong(UUID id){
+		return id.getLeastSignificantBits();
+	}
+	
 	private void setVectorClock(int [] newVector) {
 		this.vectorClock = newVector;
 	}
