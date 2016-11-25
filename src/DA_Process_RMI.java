@@ -6,6 +6,7 @@ public interface DA_Process_RMI extends Remote{
  
 	public int startCandidate() throws RemoteException;
 	public int startOrdinary(int level, UUID id) throws RemoteException;
+	public boolean isReady();
 
 }
 
