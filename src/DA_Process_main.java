@@ -33,10 +33,10 @@ public class DA_Process_main {
 				
 			}
 
-			DA_Process process1=new DA_Process(processNumber);
+			DA_Process localProcess=new DA_Process(processNumber);
 
-			Naming.rebind("rmi://localhost/"+"proc"+processNumber, process1);
-			process1.createProcesses(addresses);
+			Naming.rebind("rmi://localhost/"+"proc"+processNumber, localProcess);
+			localProcess.createProcesses(addresses);
 			System.out.println("Server is Ready");
 			//
 			//client
