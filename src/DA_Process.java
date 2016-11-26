@@ -22,6 +22,11 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private boolean elected = false;
 	private boolean ready= true;
 	private static final int EMPTYMSG = -1;
+	
+	private boolean candidateReady= true;
+	private boolean localOrdinaryReady= true;
+	
+	private boolean[] remoteOrdinariesReady;
 
 	protected DA_Process(int n) throws RemoteException{
 		super();
@@ -31,6 +36,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	public void createProcesses(ArrayList<String> addresses) throws RemoteException{
 		try {
 			rp = new DA_Process_RMI[addresses.size()];
+			remoteOrdinariesReady = new boolean[addresses.size()];
 			for(int i=0; i<rp.length;i++){
 				rp[i]=(DA_Process_RMI)Naming.lookup(addresses.get(i));
 			}
@@ -69,9 +75,11 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	public int startCandidate() throws RemoteException {
 		System.out.println("\n");
 		System.out.println("START CANDIDATE PROCESS");
+
 		ArrayList<DA_Process_RMI> finishedOrdinaries = new ArrayList<DA_Process_RMI>();
 		ArrayList<DA_Process_RMI> e = new ArrayList<DA_Process_RMI>(java.util.Arrays.asList(rp));
 		ArrayList<DA_Process_RMI> e2 = new ArrayList<DA_Process_RMI>();
+
 		int k =0;
 		while(true){
 			candidateLevel++;
@@ -118,10 +126,10 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		System.out.println("START ORDINARY PROCESS");
 		
 		if (candidateLevel<ordinaryLevel){
-			return 0;
+			return -1;
 		}else{
 			if(idToLong(candidateID)<idToLong(ownerID)){
-				return 0;
+				return -1;
 			}
 			else{
 				ordinaryLevel = candidateLevel;
