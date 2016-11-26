@@ -69,7 +69,9 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	public int startCandidate() throws RemoteException {
 		System.out.println("\n");
 		System.out.println("START CANDIDATE PROCESS");
+		ArrayList<DA_Process_RMI> finishedOrdinaries = new ArrayList<DA_Process_RMI>();
 		ArrayList<DA_Process_RMI> e = new ArrayList<DA_Process_RMI>(java.util.Arrays.asList(rp));
+		ArrayList<DA_Process_RMI> e2 = new ArrayList<DA_Process_RMI>();
 		int k =0;
 		while(true){
 			candidateLevel++;
@@ -82,7 +84,6 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 				}
 				else{
 					k = Math.min((int)Math.pow(2,candidateLevel/2),e.size());
-					ArrayList<DA_Process_RMI> e2 = new ArrayList<DA_Process_RMI>();
 					for(int i =0; i<k; i++){
 						e2.add(e.remove(0));
 					}
@@ -95,6 +96,19 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			}
 			else{
 				if(acks<k) return 1;
+			}
+			for(DA_Process_RMI proc : e){
+				//Send empty messages.
+				proc.startOrdinary(EMPTYMSG,id);
+			}
+			for(DA_Process_RMI proc : finishedOrdinaries){
+				//Send empty messages.
+				proc.startOrdinary(EMPTYMSG,id);
+			}
+			int e2Size = e2.size();
+			for(int i=0; i < e2Size;i++){
+				//Empty e2.
+				finishedOrdinaries.add(e2.remove(0));
 			}
 		}
 	}
