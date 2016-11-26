@@ -34,7 +34,7 @@ public class DA_Process_main {
 				
 			}
 
-			DA_Process localProcess=new DA_Process(processNumber, isCandidate);
+			DA_Process localProcess=new DA_Process(processNumber);
 
 			Naming.rebind("rmi://localhost/"+"proc"+processNumber, localProcess);
 			localProcess.createProcesses(addresses);
@@ -52,7 +52,8 @@ public class DA_Process_main {
 			System.out.println("Connected to processes..."+processesNames);
 			System.out.println("Start to send");
 			
-			localProcess.startCandidate();
+			if(isCandidate)
+				localProcess.startCandidate();
 
 		}catch(Exception e){
 			e.printStackTrace();

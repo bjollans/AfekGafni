@@ -2,14 +2,17 @@ import java.util.UUID;
 
 public class Node{
 	private UUID id = UUID.randomUUID();
-	private String address;
+	private int indexInProcArray;
+	private int level;
 	
-	public Node(String address){
-		this.address = address;
+	public Node(int indexInProcArray, UUID id, int level){
+		this.indexInProcArray = indexInProcArray;
+		this.id = id;
+		this.level = level;
 	}
 
-	public String getAddress(){
-		return this.address;
+	public int getIndexInProcArray(){
+		return this.indexInProcArray;
 	}
 
 	public UUID getId(){
@@ -18,5 +21,13 @@ public class Node{
 
 	public long getIdNumber(){
 		return this.id.getLeastSignificantBits();
+	}
+
+	public int getLevel() {
+		return level;
+	}
+
+	public void setLevel(int level) {
+		this.level = level;
 	}
 }

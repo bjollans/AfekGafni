@@ -4,10 +4,7 @@ import java.util.UUID;
  
 public interface DA_Process_RMI extends Remote{
  
-	public int startCandidate() throws RemoteException;
-	public int startOrdinary(int level, UUID id) throws RemoteException;
-	public boolean isReady() throws RemoteException;
-	public void receiveSafeMessage() throws RemoteException;
-	public void shutdown() throws RemoteException;
+	public void requestElection(Node node) throws RemoteException;
+	public void acknowledge(int acknowledgement) throws RemoteException;
 }
 

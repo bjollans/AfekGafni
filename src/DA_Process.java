@@ -4,15 +4,17 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.UUID;
 
 public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	
 	private final UUID id = UUID.randomUUID();
 	private UUID ownerID;
-	private Node node;
-	private int ordinaryLevel = -1;
-	private int candidateLevel = -1;
+	private int ownerLevel = -1;
+	private int level;
+	
 	private static final long serialVersionUID = 6384248030531941625L;
 	public int number; 
 	private DA_Process_RMI[] rp;
@@ -21,21 +23,22 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private static final String NAMING = "proc";
 	private boolean elected = false;
 	private boolean ready= true;
-	private static final int EMPTYMSG = -1;
-	private boolean isCandidate = false;
-	private boolean isShutdown = false;
-	
-	private boolean candidateReady= true;
-	private boolean localOrdinaryReady= true;
-	
 	private int receivedSafeMsgs = 0;
+	
+	private ArrayList<DA_Process_RMI> e = new ArrayList<DA_Process_RMI>();
+	private ArrayList<DA_Process_RMI> e2 = new ArrayList<DA_Process_RMI>();
+	private ArrayList<DA_Process_RMI> eRest = new ArrayList<DA_Process_RMI>();
+	private int k=0;
+	private int acksReceived =0;
+	private int emptyAcksReceived =0;
+	private ArrayList<Node> requestsReceived = new ArrayList<Node>();
 	
 	private boolean[] remoteOrdinariesReady;
 
-	protected DA_Process(int n, boolean isCandidate) throws RemoteException{
+	protected DA_Process(int n) throws RemoteException{
 		super();
 		this.number = n;
-		this.isCandidate = isCandidate;
+		e = new ArrayList<DA_Process_RMI>(Arrays.asList(rp));
 	}
 
 	public void createProcesses(ArrayList<String> addresses) throws RemoteException{
@@ -54,134 +57,93 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			createProcesses(addresses);
 		}
 	}
-	
-	private boolean isOtherPartReady(){
-		//check if other part is readz, the two parts are candidate and ordinary part
-		//if other part is not ready, set own part to ready and return false
-		return false; //or true
-	}
-	
-	private void synchronize() throws RemoteException{
-		System.out.println("Synchronizing");
-		for(DA_Process_RMI process: rp){
-			process.receiveSafeMessage();
-		}
-		while(receivedSafeMsgs < rp.length){
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		receivedSafeMsgs -= rp.length;
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	public void receiveSafeMessage() throws RemoteException{
-		receivedSafeMsgs++;
-	}
-	
-	public boolean isReady() throws RemoteException{
-		return ready;
-	}
-	
-	public void shutdown() throws RemoteException{
-		isShutdown = true;
-	}
-	
-	private void shutdownAll() throws RemoteException{
-		for(DA_Process_RMI proc: rp){
-			proc.shutdown();
-		}
-		shutdown();
-	}
-	
-	public int startCandidate() throws RemoteException {
-		System.out.println("\n");
-		System.out.println("START CANDIDATE PROCESS");
 
-		ArrayList<DA_Process_RMI> finishedOrdinaries = new ArrayList<DA_Process_RMI>();
-		ArrayList<DA_Process_RMI> e = new ArrayList<DA_Process_RMI>(java.util.Arrays.asList(rp));
-		ArrayList<DA_Process_RMI> e2 = new ArrayList<DA_Process_RMI>();
-
-		int k =0;
-		int acks =0;
-		while(!isShutdown){
-			synchronize();
-			ordinaryLevel++;
-			if(isCandidate){
-				candidateLevel++;
-				System.out.println("candidateLevel: "+candidateLevel);
-				if(candidateLevel%2==0){
-					if(e.size()<1){
-						elected = true;
-						isCandidate = false;
-						System.out.println("IS ELECTED");
-						shutdownAll();
-					}
-					else{
-						acks = 0;
-						k = Math.min((int)Math.pow(2,candidateLevel/2),e.size());
-						for(int i =0; i<k; i++){
-							e2.add(e.remove(0));
-						}
-						for(DA_Process_RMI proc: e2){
-							int ackVal = proc.startOrdinary(candidateLevel, id);
-							System.out.println("ackVal: "+ackVal);
-							if(ackVal==1){
-								acks++;
-							}
-						}		
-					}
-				}
-				else{
-					System.out.println("acks: "+acks+" k: "+k);
-					if(acks<k){
-						isCandidate = false;
-						System.out.println("IS NOT ELECTED");
-					}
-				}
-			}
-			for(int i=0; i < e.size(); i++){
-				//Send empty messages.
-				e.get(i).startOrdinary(EMPTYMSG,id);
-			}
-			for(int i =0; i < finishedOrdinaries.size(); i++){
-				//Send empty messages.
-				finishedOrdinaries.get(i).startOrdinary(EMPTYMSG,id);
-			}
-			int e2Size = e2.size();
-			for(int i=0; i < e2Size;i++){
-				//Empty e2.
-				finishedOrdinaries.add(e2.remove(0));
-			}
+	public void requestElection(Node node) throws RemoteException{
+		requestsReceived.add(node);
+		if(requestsReceived.size()>=rp.length){
+			startOrdinary(requestsReceived);
 		}
-		return 0;
 	}
-
-	public int startOrdinary(int candidateLevel, UUID candidateID) throws RemoteException {
-		//System.out.println("\nSTART ORDINARY PROCESS");
-		
-		System.out.println("candidate: "+candidateLevel+" ownLevel: "+ordinaryLevel);
-		if (candidateLevel<ordinaryLevel){
-			return -1;
-		}else{
-			System.out.println("candId: "+idToLong(candidateID)+" ownId: "+idToLong(ownerID));
-			if(idToLong(candidateID)<idToLong(ownerID)){
-				return -1;
+	
+	public void startCandidate() throws RemoteException{
+		level ++;
+		if(level%2==0){
+			if(e.size() ==0){
+				elected = true;
+				return;
 			}
 			else{
-				ordinaryLevel = candidateLevel;
-				ownerID=candidateID;
+				k=Math.max((int)Math.pow(2, level/2), e.size());
+				for(int i=0; i<k; i++){
+					e2.add(e.remove(0));
+				}
+				Node node = new Node(number, id, level);
+				for(DA_Process_RMI proc: e2){
+					proc.requestElection(node);
+				}
+				for(DA_Process_RMI proc: e){
+					proc.requestElection(null);
+				}
 			}
 		}
-		ordinaryLevel++;
-		return 1;
+	}
+
+	public void acknowledge(int acknowledgement) throws RemoteException{
+		if(acknowledgement == 1){
+			acksReceived++;
+		}
+		else{
+			emptyAcksReceived++;
+		}
+		if(acksReceived >= rp.length){
+			if(acksReceived<k)
+				System.out.println("NOT ELECTED");
+			else{
+				level++;
+				acksReceived = 0;
+				emptyAcksReceived = 0;
+				startCandidate();
+			}
+		}
+	}
+	
+	public void startOrdinary(ArrayList<Node> candidates) throws RemoteException{
+		//calculate maximum of messages that came in
+		int maxLevel =-1;
+		UUID maxId = UUID.randomUUID();
+		int maxLink =-1;
+		for(Node n: candidates){
+			UUID id = n.getId();
+			int level = n.getLevel();
+			int link = n.getIndexInProcArray();
+			if(level > maxLevel){
+				maxLevel = level;
+				maxId = id;
+				maxLink = link;
+			}
+			else if(level== maxLevel){
+				if(idToLong(id)>idToLong(maxId)){
+					maxLevel = level;
+					maxId = id;
+					maxLink = link;
+				}
+			}
+		}
+		if(maxLevel > ownerLevel || idToLong(maxId)>idToLong(ownerID)){
+			//set new owner and send acknowledgement
+			ownerLevel = maxLevel;
+			ownerID = maxId;
+			rp[maxLink].acknowledge(1);
+		}
+		else{
+			//send an empty message to max process of this round
+			rp[maxLink].acknowledge(-1);
+		}
+		//Send empties to everybody else
+		for(int i =0; i<rp.length; i++){
+			if(i!=maxLink)
+				rp[i].acknowledge(-1);
+		}
 	}
 
 	private long idToLong(UUID id){
