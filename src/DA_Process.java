@@ -11,7 +11,8 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private final UUID id = UUID.randomUUID();
 	private UUID ownerID = id;
 	private Node node;
-	private int level = -1;
+	private int ordinaryLevel = -1;
+	private int candidateLevel = -1;
 	private static final long serialVersionUID = 6384248030531941625L;
 	public int number; 
 	private DA_Process_RMI[] rp;
@@ -44,6 +45,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	
 	private boolean isOtherPartReady(){
 		//check if other part is readz, the two parts are candidate and ordinary part
+		//if other part is not ready, set own part to ready and return false
 		return false; //or true
 	}
 	
@@ -75,7 +77,13 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			}
 			else{
 				int k = Math.min(Math.pow(2,level/2),e.size());
-				ArrayList<DA_Process_RMI> e2 = null;
+				ArrayList<DA_Process_RMI> e2 = new ArrayList<DA_Process_RMI>();
+				for(int i =0; i<k; i++){
+					e2.add(e.remove(0));
+				}
+				for(DA_Process_RMI proc: e2){
+					proc.startOrdinary();
+				}
 			}
 		}
 		
