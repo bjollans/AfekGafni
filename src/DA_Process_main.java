@@ -15,6 +15,7 @@ public class DA_Process_main {
 		int processID = 1;
 		for (int i = 3; i < args.length; i++) {
 			if(processID==processNumber) processID++;
+			System.out.println(args[i]);
 			addresses.add("rmi://"+args[i]+"/proc"+processID);
 			processID++;
 		}
@@ -43,7 +44,12 @@ public class DA_Process_main {
 			//client
 			//
 			System.out.println("Running process "+processNumber+".....");
-			System.out.println("Connected to processes");
+			String processesNames = " ";
+			for (int i = 0; i < addresses.size(); i++) {
+				processesNames+=addresses.get(i);
+				processesNames+=", ";
+			}
+			System.out.println("Connected to processes..."+processesNames);
 			System.out.println("Start to send");
 			
 			localProcess.startCandidate();

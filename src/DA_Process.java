@@ -9,7 +9,7 @@ import java.util.UUID;
 public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	
 	private final UUID id = UUID.randomUUID();
-	private UUID ownerID = id;
+	private UUID ownerID;
 	private Node node;
 	private int ordinaryLevel = -1;
 	private int candidateLevel = -1;
@@ -23,9 +23,12 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private boolean ready= true;
 	private static final int EMPTYMSG = -1;
 	private boolean isCandidate = false;
+	private boolean isShutdown = false;
 	
 	private boolean candidateReady= true;
 	private boolean localOrdinaryReady= true;
+	
+	private int receivedSafeMsgs = 0;
 	
 	private boolean[] remoteOrdinariesReady;
 
@@ -58,20 +61,44 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		return false; //or true
 	}
 	
-	private void synchronize(){
-		if(!isOtherPartReady()) return;
-		ready = true;
+	private void synchronize() throws RemoteException{
+		System.out.println("Synchronizing");
 		for(DA_Process_RMI process: rp){
-			while(!process.isReady()){
-				long time = System.currentTimeMillis();
-				while(System.currentTimeMillis()-time <1000){}
+			process.receiveSafeMessage();
+		}
+		while(receivedSafeMsgs < rp.length){
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
 		}
-		ready = false;
+		receivedSafeMsgs -= rp.length;
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	public boolean isReady(){
+	public void receiveSafeMessage() throws RemoteException{
+		receivedSafeMsgs++;
+	}
+	
+	public boolean isReady() throws RemoteException{
 		return ready;
+	}
+	
+	public void shutdown() throws RemoteException{
+		isShutdown = true;
+	}
+	
+	private void shutdownAll() throws RemoteException{
+		for(DA_Process_RMI proc: rp){
+			proc.shutdown();
+		}
+		shutdown();
 	}
 	
 	public int startCandidate() throws RemoteException {
@@ -83,39 +110,50 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		ArrayList<DA_Process_RMI> e2 = new ArrayList<DA_Process_RMI>();
 
 		int k =0;
-		while(true){
+		int acks =0;
+		while(!isShutdown){
 			synchronize();
+			ordinaryLevel++;
 			if(isCandidate){
 				candidateLevel++;
-				int acks =0;
+				System.out.println("candidateLevel: "+candidateLevel);
 				if(candidateLevel%2==0){
 					if(e.size()<1){
 						elected = true;
-						return 0;
+						isCandidate = false;
+						System.out.println("IS ELECTED");
+						shutdownAll();
 					}
 					else{
+						acks = 0;
 						k = Math.min((int)Math.pow(2,candidateLevel/2),e.size());
 						for(int i =0; i<k; i++){
 							e2.add(e.remove(0));
 						}
 						for(DA_Process_RMI proc: e2){
-							if(proc.startOrdinary(candidateLevel, id)==1){
+							int ackVal = proc.startOrdinary(candidateLevel, id);
+							System.out.println("ackVal: "+ackVal);
+							if(ackVal==1){
 								acks++;
 							}
-						}
+						}		
 					}
 				}
 				else{
-					if(acks<k) return 1;
+					System.out.println("acks: "+acks+" k: "+k);
+					if(acks<k){
+						isCandidate = false;
+						System.out.println("IS NOT ELECTED");
+					}
 				}
 			}
-			for(DA_Process_RMI proc : e){
+			for(int i=0; i < e.size(); i++){
 				//Send empty messages.
-				proc.startOrdinary(EMPTYMSG,id);
+				e.get(i).startOrdinary(EMPTYMSG,id);
 			}
-			for(DA_Process_RMI proc : finishedOrdinaries){
+			for(int i =0; i < finishedOrdinaries.size(); i++){
 				//Send empty messages.
-				proc.startOrdinary(EMPTYMSG,id);
+				finishedOrdinaries.get(i).startOrdinary(EMPTYMSG,id);
 			}
 			int e2Size = e2.size();
 			for(int i=0; i < e2Size;i++){
@@ -123,15 +161,17 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 				finishedOrdinaries.add(e2.remove(0));
 			}
 		}
+		return 0;
 	}
 
 	public int startOrdinary(int candidateLevel, UUID candidateID) throws RemoteException {
-		System.out.println("\n");
-		System.out.println("START ORDINARY PROCESS");
+		//System.out.println("\nSTART ORDINARY PROCESS");
 		
+		System.out.println("candidate: "+candidateLevel+" ownLevel: "+ordinaryLevel);
 		if (candidateLevel<ordinaryLevel){
 			return -1;
 		}else{
+			System.out.println("candId: "+idToLong(candidateID)+" ownId: "+idToLong(ownerID));
 			if(idToLong(candidateID)<idToLong(ownerID)){
 				return -1;
 			}
@@ -140,11 +180,12 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 				ownerID=candidateID;
 			}
 		}
-		
+		ordinaryLevel++;
 		return 1;
 	}
 
 	private long idToLong(UUID id){
+		if(id == null) return Long.MIN_VALUE;
 		return id.getLeastSignificantBits();
 	}
 	
