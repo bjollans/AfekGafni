@@ -4,7 +4,7 @@ import java.util.UUID;
  
 public interface DA_Process_RMI extends Remote{
  
-	public void requestElection(Node node) throws RemoteException;
+	public void requestElection(int level, int link, UUID id) throws RemoteException;
 	public void acknowledge(int acknowledgement) throws RemoteException;
 }
 

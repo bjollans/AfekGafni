@@ -13,7 +13,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private final UUID id = UUID.randomUUID();
 	private UUID ownerID;
 	private int ownerLevel = -1;
-	private int level;
+	private int level = -1;
 	
 	private static final long serialVersionUID = 6384248030531941625L;
 	public int number; 
@@ -32,13 +32,18 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private int acksReceived =0;
 	private int emptyAcksReceived =0;
 	private ArrayList<Node> requestsReceived = new ArrayList<Node>();
+	private ArrayList<Node> candidates = new ArrayList<Node>();
 	
+	private boolean isCandidate = false;
 	private boolean[] remoteOrdinariesReady;
 
 	protected DA_Process(int n) throws RemoteException{
 		super();
 		this.number = n;
-		e = new ArrayList<DA_Process_RMI>(Arrays.asList(rp));
+	}
+	
+	public void setIsCandidate(boolean isCandidate){
+		this.isCandidate = isCandidate;
 	}
 
 	public void createProcesses(ArrayList<String> addresses) throws RemoteException{
@@ -56,39 +61,62 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			System.out.println("polling...");
 			createProcesses(addresses);
 		}
+		e = new ArrayList<DA_Process_RMI>(Arrays.asList(rp));
 	}
 
-	public void requestElection(Node node) throws RemoteException{
+	public void requestElection(int level, int link, UUID id) throws RemoteException{
+		try{
+		System.out.println("REQUEST RECEIVED");
+		Node node = new Node(link, id, level);
 		requestsReceived.add(node);
+		if(level >-1)
+			candidates.add(node);
 		if(requestsReceived.size()>=rp.length){
-			startOrdinary(requestsReceived);
+			System.out.println("REQUEST READY");
+			startOrdinary(candidates);
+		}
+		}
+		catch(Exception e){
+			e.printStackTrace();
 		}
 	}
 	
 	public void startCandidate() throws RemoteException{
-		level ++;
-		if(level%2==0){
-			if(e.size() ==0){
-				elected = true;
-				return;
+		if(isCandidate){
+			System.out.println("START CANDIDATE");
+			level ++;
+			if(level%2==0){
+				if(e.size() ==0){
+					elected = true;
+					System.out.println("is Elected");
+					return;
+				}
+				else{
+					k=Math.min((int)Math.pow(2, level/2), e.size());
+					for(int i=0; i<k; i++){
+						e2.add(e.remove(0));
+					}
+					for(DA_Process_RMI proc: e2){
+						System.out.println("REQUEST SENT FULL");
+						proc.requestElection(level,number,id);
+					}
+					for(DA_Process_RMI proc: e){
+						System.out.println("REQUEST SENT EMPTY");
+						proc.requestElection(-1,number,id); // -1 causes error later
+					}
+				}
 			}
-			else{
-				k=Math.max((int)Math.pow(2, level/2), e.size());
-				for(int i=0; i<k; i++){
-					e2.add(e.remove(0));
-				}
-				Node node = new Node(number, id, level);
-				for(DA_Process_RMI proc: e2){
-					proc.requestElection(node);
-				}
-				for(DA_Process_RMI proc: e){
-					proc.requestElection(null);
-				}
+		}
+		else{
+			for(DA_Process_RMI proc: e){
+				System.out.println("REQUEST SENT EMPTY");
+				proc.requestElection(-1,number,id); // -1 causes error later
 			}
 		}
 	}
 
 	public void acknowledge(int acknowledgement) throws RemoteException{
+		System.out.println("ACKNOWLEDGEMENT RECEIVED");
 		if(acknowledgement == 1){
 			acksReceived++;
 		}
@@ -96,9 +124,13 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			emptyAcksReceived++;
 		}
 		if(acksReceived >= rp.length){
-			if(acksReceived<k)
+			if(acksReceived<k){
 				System.out.println("NOT ELECTED");
+				isCandidate = false;
+				startCandidate();
+			}
 			else{
+				System.out.println("ACKNOWLEDGEMENT READY");
 				level++;
 				acksReceived = 0;
 				emptyAcksReceived = 0;
@@ -108,36 +140,39 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	}
 	
 	public void startOrdinary(ArrayList<Node> candidates) throws RemoteException{
+		System.out.println("START ORDINARY");
 		//calculate maximum of messages that came in
 		int maxLevel =-1;
 		UUID maxId = UUID.randomUUID();
 		int maxLink =-1;
-		for(Node n: candidates){
-			UUID id = n.getId();
-			int level = n.getLevel();
-			int link = n.getIndexInProcArray();
-			if(level > maxLevel){
-				maxLevel = level;
-				maxId = id;
-				maxLink = link;
-			}
-			else if(level== maxLevel){
-				if(idToLong(id)>idToLong(maxId)){
+		if(!(candidates.size() <1)){
+			for(Node n: candidates){
+				UUID id = n.getId();
+				int level = n.getLevel();
+				int link = n.getIndexInProcArray();
+				if(level > maxLevel){
 					maxLevel = level;
 					maxId = id;
 					maxLink = link;
 				}
+				else if(level== maxLevel){
+					if(idToLong(id)>idToLong(maxId)){
+						maxLevel = level;
+						maxId = id;
+						maxLink = link;
+					}
+				}
 			}
-		}
-		if(maxLevel > ownerLevel || idToLong(maxId)>idToLong(ownerID)){
-			//set new owner and send acknowledgement
-			ownerLevel = maxLevel;
-			ownerID = maxId;
-			rp[maxLink].acknowledge(1);
-		}
-		else{
-			//send an empty message to max process of this round
-			rp[maxLink].acknowledge(-1);
+			if(maxLevel > ownerLevel || idToLong(maxId)>idToLong(ownerID)){
+				//set new owner and send acknowledgement
+				ownerLevel = maxLevel;
+				ownerID = maxId;
+				rp[maxLink].acknowledge(1);
+			}
+			else{
+				//send an empty message to max process of this round
+				rp[maxLink].acknowledge(-1);
+			}
 		}
 		//Send empties to everybody else
 		for(int i =0; i<rp.length; i++){

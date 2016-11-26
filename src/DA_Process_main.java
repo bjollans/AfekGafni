@@ -53,7 +53,9 @@ public class DA_Process_main {
 			System.out.println("Start to send");
 			
 			if(isCandidate)
-				localProcess.startCandidate();
+				localProcess.setIsCandidate(isCandidate);
+				
+			localProcess.startCandidate();
 
 		}catch(Exception e){
 			e.printStackTrace();
