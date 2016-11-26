@@ -22,15 +22,17 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private boolean elected = false;
 	private boolean ready= true;
 	private static final int EMPTYMSG = -1;
+	private boolean isCandidate = false;
 	
 	private boolean candidateReady= true;
 	private boolean localOrdinaryReady= true;
 	
 	private boolean[] remoteOrdinariesReady;
 
-	protected DA_Process(int n) throws RemoteException{
+	protected DA_Process(int n, boolean isCandidate) throws RemoteException{
 		super();
 		this.number = n;
+		this.candidate = candidate;
 	}
 
 	public void createProcesses(ArrayList<String> addresses) throws RemoteException{
@@ -82,28 +84,30 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 
 		int k =0;
 		while(true){
-			candidateLevel++;
 			synchronize();
-			int acks =0;
-			if(candidateLevel%2==0){
-				if(e.size()<1){
-					elected = true;
-					return 0;
-				}
-				else{
-					k = Math.min((int)Math.pow(2,candidateLevel/2),e.size());
-					for(int i =0; i<k; i++){
-						e2.add(e.remove(0));
+			if(isCandidate){
+				candidateLevel++;
+				int acks =0;
+				if(candidateLevel%2==0){
+					if(e.size()<1){
+						elected = true;
+						return 0;
 					}
-					for(DA_Process_RMI proc: e2){
-						if(proc.startOrdinary(candidateLevel, id)==1){
-							acks++;
+					else{
+						k = Math.min((int)Math.pow(2,candidateLevel/2),e.size());
+						for(int i =0; i<k; i++){
+							e2.add(e.remove(0));
+						}
+						for(DA_Process_RMI proc: e2){
+							if(proc.startOrdinary(candidateLevel, id)==1){
+								acks++;
+							}
 						}
 					}
 				}
-			}
-			else{
-				if(acks<k) return 1;
+				else{
+					if(acks<k) return 1;
+				}
 			}
 			for(DA_Process_RMI proc : e){
 				//Send empty messages.
