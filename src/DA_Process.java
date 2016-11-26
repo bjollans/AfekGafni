@@ -32,7 +32,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	protected DA_Process(int n, boolean isCandidate) throws RemoteException{
 		super();
 		this.number = n;
-		this.candidate = candidate;
+		this.isCandidate = isCandidate;
 	}
 
 	public void createProcesses(ArrayList<String> addresses) throws RemoteException{
