@@ -91,6 +91,22 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		return ready;
 	}
 
+	private void shutdownInitiate() throws RemoteException{
+		for(DA_Process_RMI proc: rp){
+			proc.shutdown();
+		}
+		this.shutdown();
+	}
+
+	public void shutdown() throws RemoteException{
+		try{
+	    UnicastRemoteObject.unexportObject(this, true);
+		}
+		catch(Exception e){
+
+		}
+	}
+
 	public void requestElection(int level, int link, UUID id) throws RemoteException{
 		try{
 		System.out.println("REQUEST RECEIVED");
@@ -122,6 +138,8 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 				if(e.size() ==0){
 					elected = true;
 					System.out.println("is Elected");
+					isCandidate = false;
+					shutdownInitiate();
 					return;
 				}
 				else{
