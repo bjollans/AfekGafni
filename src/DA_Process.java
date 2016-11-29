@@ -50,7 +50,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		try {
 			rp = new DA_Process_RMI[addresses.size()];
 			remoteOrdinariesReady = new boolean[addresses.size()];
-			for(int i=0; i<2;i++){
+			for(int i=0; i<addresses.size();i++){
 				rp[i]=(DA_Process_RMI)Naming.lookup(addresses.get(i));
 			}
 		} catch (MalformedURLException mue){
@@ -69,6 +69,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		System.out.println("Synchronizing...");
 		ready = true;
 		for(DA_Process_RMI process: rp){
+			System.out.println("Process: "+process);
 			while(!process.isReady()){
 				long time = System.currentTimeMillis();
 				while(System.currentTimeMillis()-time <1000){}
