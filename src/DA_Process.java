@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
+import java.rmi.registry.Registry;
 
 public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 
@@ -16,7 +17,9 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private int level = -1;
 
 	private static final long serialVersionUID = 6384248030531941625L;
+	private Registry registry;
 	public int number;
+	private String name;
 	private DA_Process_RMI[] rp;
 	public static final int FACTOR = 1;
 	private int[] vectorClock = new int[3];
@@ -40,6 +43,14 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	protected DA_Process(int n) throws RemoteException{
 		super();
 		this.number = n;
+	}
+
+	public void setRegistry(Registry registry){
+		this.registry = registry;
+	}
+
+	public void setName(String name){
+		this.name = name;
 	}
 
 	public void setIsCandidate(boolean isCandidate){
@@ -69,7 +80,6 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		System.out.println("Synchronizing...");
 		ready = true;
 		for(DA_Process_RMI process: rp){
-			//System.out.println("Process: "+process);
 			while(!process.isReady()){
 				long time = System.currentTimeMillis();
 				while(System.currentTimeMillis()-time <1000){}
@@ -80,14 +90,26 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	public boolean isReady() throws RemoteException{
 		return ready;
 	}
-	
-	public int getProcessNumber() throws RemoteException{
-		return number;
+
+	private void shutdownInitiate() throws RemoteException{
+		for(DA_Process_RMI proc: rp){
+			proc.shutdown();
+		}
+		this.shutdown();
+	}
+
+	public void shutdown() throws RemoteException{
+		try{
+	    UnicastRemoteObject.unexportObject(this, true);
+		}
+		catch(Exception e){
+
+		}
 	}
 
 	public void requestElection(int level, int link, UUID id) throws RemoteException{
 		try{
-		System.out.println("\tREQUEST RECEIVED with level " + level + " with link " + link);
+		System.out.println("REQUEST RECEIVED");
 		if(link > number)link--;
 		link--;
 		Node node = new Node(link, id, level);
@@ -95,10 +117,14 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		if(level >-1)
 			candidates.add(node);
 		if(requestsReceived.size()>=rp.length){
-			System.out.println("REQUESTS RECEIVED FROM EVERYBODY");
-			startOrdinary(candidates);
+			System.out.println("REQUEST READY");
+			requestsReceived.clear();
+			@SuppressWarnings("unchecked")
+			ArrayList<Node> candidatesCopy = (ArrayList)candidates.clone();
+			candidates.clear();
+			startOrdinary(candidatesCopy);
 		}
-		}
+	}
 		catch(Exception e){
 			e.printStackTrace();
 		}
@@ -112,6 +138,8 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 				if(e.size() ==0){
 					elected = true;
 					System.out.println("is Elected");
+					isCandidate = false;
+					shutdownInitiate();
 					return;
 				}
 				else{
@@ -120,12 +148,11 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 						e2.add(e.remove(0));
 					}
 					for(DA_Process_RMI proc: e2){
-						System.out.println("In this round, we chose " +proc.getProcessNumber());
-						System.out.println("REQUEST SENT FULL TO CHOSEN ONES: " +proc.getProcessNumber());
+						System.out.println("REQUEST SENT FULL");
 						proc.requestElection(level,number,id);
 					}
 					for(DA_Process_RMI proc: e){
-						System.out.println("REQUEST SENT EMPTY TO NOT CHOSEN ONES: "+proc.getProcessNumber());
+						System.out.println("REQUEST SENT EMPTY");
 						proc.requestElection(-1,number,id); // -1 causes error later
 					}
 				}
@@ -133,14 +160,14 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		}
 		else{
 			for(DA_Process_RMI proc: rp){
-				System.out.println("REQUEST SENT EMPTY to EVERYBODY - not candidate");
+				System.out.println("REQUEST SENT EMPTY");
 				proc.requestElection(-1,number,id); // -1 causes error later
 			}
 		}
 	}
 
-	public void acknowledge(int acknowledgement, int from) throws RemoteException{
-		System.out.println("\tACKNOWLEDGEMENT RECEIVED from "+from);
+	public void acknowledge(int acknowledgement) throws RemoteException{
+		System.out.println("ACKNOWLEDGEMENT RECEIVED");
 		if(acknowledgement == 1){
 			acksReceived++;
 		}
@@ -148,18 +175,17 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			emptyAcksReceived++;
 		}
 		if(acksReceived+emptyAcksReceived >= rp.length-1){
+			System.out.println("ACKNOWLEDGEMENT READY");
 			if(acksReceived<k){
-				System.out.println("NOT ELECTED from "+from);
+				System.out.println("NOT ELECTED");
 				isCandidate = false;
-				//startCandidate();
 			}
 			else{
-				System.out.println("\tACKNOWLEDGEMENT RECEIVED from " + from);
 				level++;
-				acksReceived = 0;
-				emptyAcksReceived = 0;
-				//startCandidate();
 			}
+			acksReceived = 0;
+			emptyAcksReceived = 0;
+			startCandidate();
 		}
 	}
 
@@ -187,30 +213,24 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 					}
 				}
 			}
-			System.out.println("\nmaxLevel:" + maxLevel);
-			System.out.println("ownerLevel:" +   ownerLevel);
-			System.out.println("\nmaxID:" + maxId);
-			System.out.println("ownerID:" + ownerID + "\n");
-			
-			System.out.println("\n" + (maxLevel > ownerLevel || idToLong(maxId)>idToLong(ownerID)) + "\n");
 			if(maxLevel > ownerLevel || idToLong(maxId)>idToLong(ownerID)){
 				//set new owner and send acknowledgement
 				ownerLevel = maxLevel;
 				ownerID = maxId;
-				System.out.println("1 ACKNOWLEDGEMENT SENT FULL TO NEW OWNER from " + number + " to " + rp[maxLink].getProcessNumber());
-				rp[maxLink].acknowledge(1, number);
+				System.out.println("ACKNOWLEDGEMENT SENT FULL");
+				rp[maxLink].acknowledge(1);
 			}
 			else{
 				//send an empty message to max process of this round
-				System.out.println("2 ACKNOWLEDGEMENT SENT EMPTY TO NOT CHOSEN OWNER from " + number + " to " + rp[maxLink].getProcessNumber());
-				rp[maxLink].acknowledge(-1, number);
+				System.out.println("ACKNOWLEDGEMENT SENT EMPTY");
+				rp[maxLink].acknowledge(-1);
 			}
 		}
 		//Send empties to everybody else
 		for(int i =0; i<rp.length; i++){
 			if(i!=maxLink){
-				System.out.println("3 ACKNOWLEDGEMENT SENT EMPTY from " + number + " to " + rp[i].getProcessNumber());
-				rp[i].acknowledge(-1, number);
+				System.out.println("ACKNOWLEDGEMENT SENT EMPTY");
+				rp[i].acknowledge(-1);
 			}
 		}
 		if(ownerLevel > -1) ownerLevel++;

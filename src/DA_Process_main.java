@@ -1,6 +1,7 @@
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.rmi.registry.Registry;
 
 public class DA_Process_main {
 
@@ -26,17 +27,20 @@ public class DA_Process_main {
 			//
 
 			System.setProperty("java.rmi.server.hostname","localhost");
+			Registry reg;
+			DA_Process localProcess=new DA_Process(processNumber);
 			try {
-				java.rmi.registry.LocateRegistry.createRegistry(registryPort);
+				reg =java.rmi.registry.LocateRegistry.createRegistry(registryPort);
+				String name = "rmi://localhost/"+"proc"+processNumber;
+				Naming.rebind(name,localProcess);
+				localProcess.setRegistry(reg);
+				localProcess.setName(name);
 			} catch (RemoteException e){
 				e.printStackTrace();
 			} catch (Exception e){
 
 			}
 
-			DA_Process localProcess=new DA_Process(processNumber);
-
-			Naming.rebind("rmi://localhost/"+"proc"+processNumber, localProcess);
 			localProcess.createProcesses(addresses);
 			System.out.println("Server is Ready");
 
