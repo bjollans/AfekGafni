@@ -211,7 +211,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	}
 
 	public void startOrdinary(ArrayList<Node> candidates) throws RemoteException{
-		System.out.println("START ORDINARY");
+		System.out.println("Start ordinary");
 		//calculate maximum of messages that came in
 		int maxLevel =-1;
 		UUID maxId = UUID.randomUUID();
