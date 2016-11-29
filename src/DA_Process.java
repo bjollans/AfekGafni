@@ -120,7 +120,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 
 	public void requestElection(int level, int link, UUID id) throws RemoteException{
 		try{
-		System.out.println("REQUEST RECEIVED from process " + link);
+		System.out.println("\tREQUEST RECEIVED from process " + link);
 		if(link > number)link--;
 		link--;
 		Node node = new Node(link, id, level);
@@ -188,7 +188,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	}
 
 	public void acknowledge(int acknowledgement, int processNumber) throws RemoteException{
-		System.out.println("ACKNOWLEDGEMENT RECEIVED from "+ processNumber);
+		System.out.println("\tACKNOWLEDGEMENT RECEIVED from "+ processNumber);
 		if(acknowledgement == 1){
 			acksReceived++;
 		}
