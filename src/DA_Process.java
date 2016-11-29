@@ -149,9 +149,9 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			if(level%2==0){
 				if(e.size() ==0){
 					elected = true;
-					System.out.println("Elected!");
+					System.out.println("\nElected!\n");
 					isCandidate = false;
-					shutdownInitiate();
+					//shutdownInitiate();
 					return;
 				}
 				else{
@@ -167,10 +167,19 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 						System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
 						proc.requestElection(-1,number,id); // -1 causes error later
 					}
+					for(DA_Process_RMI proc: eRest){
+						System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
+						proc.requestElection(-1,number,id); // -1 causes error later
+					}
+					int e2Size = e2.size();
+					for(int i=0; i<e2Size; i++){
+						eRest.add(e2.remove(0));
+					}
 				}
 			}
 		}
 		else{
+			if (elected) return;
 			for(DA_Process_RMI proc: rp){
 				System.out.println("REQUEST SENT EMPTY BECAUSE THIS IS NOT A CANDIDATE PROCESS: Process " + proc.getProcessNumber());
 				proc.requestElection(-1,number,id); // -1 causes error later
@@ -189,7 +198,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		if(acksReceived+emptyAcksReceived >= rp.length-1){
 			System.out.println("ALL ACKs RECEIVED: IS IT ELECTED?");
 			if(acksReceived<k){
-				System.out.println("NOT ELECTED");
+				System.out.println("\nNot elected..\n.");
 				isCandidate = false;
 			}
 			else{
