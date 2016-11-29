@@ -9,22 +9,22 @@ import java.util.HashMap;
 import java.util.UUID;
 
 public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
-	
+
 	private final UUID id = UUID.randomUUID();
 	private UUID ownerID;
 	private int ownerLevel = -1;
 	private int level = -1;
-	
+
 	private static final long serialVersionUID = 6384248030531941625L;
-	public int number; 
+	public int number;
 	private DA_Process_RMI[] rp;
 	public static final int FACTOR = 1;
 	private int[] vectorClock = new int[3];
 	private static final String NAMING = "proc";
 	private boolean elected = false;
-	private boolean ready= true;
+	private boolean ready= false;
 	private int receivedSafeMsgs = 0;
-	
+
 	private ArrayList<DA_Process_RMI> e = new ArrayList<DA_Process_RMI>();
 	private ArrayList<DA_Process_RMI> e2 = new ArrayList<DA_Process_RMI>();
 	private ArrayList<DA_Process_RMI> eRest = new ArrayList<DA_Process_RMI>();
@@ -33,7 +33,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private int emptyAcksReceived =0;
 	private ArrayList<Node> requestsReceived = new ArrayList<Node>();
 	private ArrayList<Node> candidates = new ArrayList<Node>();
-	
+
 	private boolean isCandidate = false;
 	private boolean[] remoteOrdinariesReady;
 
@@ -41,7 +41,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		super();
 		this.number = n;
 	}
-	
+
 	public void setIsCandidate(boolean isCandidate){
 		this.isCandidate = isCandidate;
 	}
@@ -50,7 +50,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		try {
 			rp = new DA_Process_RMI[addresses.size()];
 			remoteOrdinariesReady = new boolean[addresses.size()];
-			for(int i=0; i<rp.length;i++){
+			for(int i=0; i<2;i++){
 				rp[i]=(DA_Process_RMI)Naming.lookup(addresses.get(i));
 			}
 		} catch (MalformedURLException mue){
@@ -62,11 +62,30 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			createProcesses(addresses);
 		}
 		e = new ArrayList<DA_Process_RMI>(Arrays.asList(rp));
+		synchronize();
+	}
+
+	private void synchronize() throws RemoteException{
+		System.out.println("Synchronizing...");
+		ready = true;
+		for(DA_Process_RMI process: rp){
+			while(!process.isReady()){
+				long time = System.currentTimeMillis();
+				while(System.currentTimeMillis()-time <1000){}
+			}
+		}
+		ready = false;
+	}
+
+	public boolean isReady() throws RemoteException{
+		return ready;
 	}
 
 	public void requestElection(int level, int link, UUID id) throws RemoteException{
 		try{
 		System.out.println("REQUEST RECEIVED");
+		if(link > number)link--;
+		link--;
 		Node node = new Node(link, id, level);
 		requestsReceived.add(node);
 		if(level >-1)
@@ -80,7 +99,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void startCandidate() throws RemoteException{
 		if(isCandidate){
 			System.out.println("START CANDIDATE");
@@ -138,7 +157,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			}
 		}
 	}
-	
+
 	public void startOrdinary(ArrayList<Node> candidates) throws RemoteException{
 		System.out.println("START ORDINARY");
 		//calculate maximum of messages that came in
@@ -167,6 +186,10 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 				//set new owner and send acknowledgement
 				ownerLevel = maxLevel;
 				ownerID = maxId;
+				System.out.println("maxLink: "+maxLink);
+				System.out.println("rp[0]:"+rp[0]);
+				System.out.println("rp[1]:"+rp[1]);
+				System.out.println("rpLength: "+rp.length);
 				rp[maxLink].acknowledge(1);
 			}
 			else{
@@ -176,22 +199,24 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		}
 		//Send empties to everybody else
 		for(int i =0; i<rp.length; i++){
-			if(i!=maxLink)
+			if(i!=maxLink){
 				rp[i].acknowledge(-1);
+			}
 		}
+		if(ownerLevel > -1) ownerLevel++;
 	}
 
 	private long idToLong(UUID id){
 		if(id == null) return Long.MIN_VALUE;
 		return id.getLeastSignificantBits();
 	}
-	
+
 	private void setVectorClock(int [] newVector) {
 		this.vectorClock = newVector;
 	}
-	
+
 	private int[] getVectorClock() {
 		return vectorClock;
 	}
-	
+
 }
