@@ -9,7 +9,7 @@ public class DA_Process_main {
 		int registryPort = Integer.parseInt(args[0]);
 		int processNumber = Integer.parseInt(args[1]);
 		boolean isCandidate = args[2].equals("true");
-		
+
 		ArrayList<String> addresses = new ArrayList<String>();
 
 		int processID = 1;
@@ -31,7 +31,7 @@ public class DA_Process_main {
 			} catch (RemoteException e){
 				e.printStackTrace();
 			} catch (Exception e){
-				
+
 			}
 
 			DA_Process localProcess=new DA_Process(processNumber);
@@ -39,22 +39,10 @@ public class DA_Process_main {
 			Naming.rebind("rmi://localhost/"+"proc"+processNumber, localProcess);
 			localProcess.createProcesses(addresses);
 			System.out.println("Server is Ready");
-			
-			//
-			//client
-			//
-			System.out.println("Running process "+processNumber+".....");
-			String processesNames = " ";
-			for (int i = 0; i < addresses.size(); i++) {
-				processesNames+=addresses.get(i);
-				processesNames+=", ";
-			}
-			System.out.println("Connected to processes..."+processesNames);
-			System.out.println("Start to send");
-			
+
 			if(isCandidate)
 				localProcess.setIsCandidate(isCandidate);
-				
+
 			localProcess.startCandidate();
 
 		}catch(Exception e){

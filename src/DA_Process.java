@@ -74,7 +74,6 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 				while(System.currentTimeMillis()-time <1000){}
 			}
 		}
-		ready = false;
 	}
 
 	public boolean isReady() throws RemoteException{
@@ -127,7 +126,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			}
 		}
 		else{
-			for(DA_Process_RMI proc: e){
+			for(DA_Process_RMI proc: rp){
 				System.out.println("REQUEST SENT EMPTY");
 				proc.requestElection(-1,number,id); // -1 causes error later
 			}
@@ -186,20 +185,19 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 				//set new owner and send acknowledgement
 				ownerLevel = maxLevel;
 				ownerID = maxId;
-				System.out.println("maxLink: "+maxLink);
-				System.out.println("rp[0]:"+rp[0]);
-				System.out.println("rp[1]:"+rp[1]);
-				System.out.println("rpLength: "+rp.length);
+				System.out.println("ACKNOWLEDGEMENT SENT FULL");
 				rp[maxLink].acknowledge(1);
 			}
 			else{
 				//send an empty message to max process of this round
+				System.out.println("ACKNOWLEDGEMENT SENT EMPTY");
 				rp[maxLink].acknowledge(-1);
 			}
 		}
 		//Send empties to everybody else
 		for(int i =0; i<rp.length; i++){
 			if(i!=maxLink){
+				System.out.println("ACKNOWLEDGEMENT SENT EMPTY");
 				rp[i].acknowledge(-1);
 			}
 		}
