@@ -141,7 +141,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		else{
 			emptyAcksReceived++;
 		}
-		if(acksReceived >= rp.length){
+		if(acksReceived >= rp.length-1){
 			if(acksReceived<k){
 				System.out.println("NOT ELECTED");
 				isCandidate = false;
