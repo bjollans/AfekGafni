@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
+import java.rmi.registry.Registry;
 
 public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 
@@ -16,7 +17,9 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private int level = -1;
 
 	private static final long serialVersionUID = 6384248030531941625L;
+	private Registry registry;
 	public int number;
+	private String name;
 	private DA_Process_RMI[] rp;
 	public static final int FACTOR = 1;
 	private int[] vectorClock = new int[3];
@@ -40,6 +43,14 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	protected DA_Process(int n) throws RemoteException{
 		super();
 		this.number = n;
+	}
+
+	public void setRegistry(Registry registry){
+		this.registry = registry;
+	}
+
+	public void setName(String name){
+		this.name = name;
 	}
 
 	public void setIsCandidate(boolean isCandidate){
@@ -91,9 +102,13 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			candidates.add(node);
 		if(requestsReceived.size()>=rp.length){
 			System.out.println("REQUEST READY");
-			startOrdinary(candidates);
+			requestsReceived.clear();
+			@SuppressWarnings("unchecked")
+			ArrayList<Node> candidatesCopy = (ArrayList)candidates.clone();
+			candidates.clear();
+			startOrdinary(candidatesCopy);
 		}
-		}
+	}
 		catch(Exception e){
 			e.printStackTrace();
 		}
