@@ -9,7 +9,7 @@ public class DA_Process_main {
 		long startTime = System.currentTimeMillis();
 		int registryPort = Integer.parseInt(args[0]);
 		int processNumber = Integer.parseInt(args[1]);
-		boolean isCandidate = args[2].equals("true");
+		int roundToBeCandidate = Integer.parseInt(args[2]);
 
 		ArrayList<String> addresses = new ArrayList<String>();
 
@@ -44,8 +44,7 @@ public class DA_Process_main {
 			localProcess.createProcesses(addresses);
 			System.out.println("Server is Ready");
 
-			if(isCandidate)
-				localProcess.setIsCandidate(isCandidate);
+			localProcess.setRoundToBeCandidate(roundToBeCandidate);
 
 			localProcess.startCandidate();
 

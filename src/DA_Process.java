@@ -38,6 +38,8 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	private ArrayList<Node> candidates = new ArrayList<Node>();
 
 	private boolean isCandidate = false;
+	private int round =0;
+	private int roundToBeCandidate = -1;
 	private boolean[] remoteOrdinariesReady;
 
 	protected DA_Process(int n) throws RemoteException{
@@ -55,6 +57,10 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 
 	public void setIsCandidate(boolean isCandidate){
 		this.isCandidate = isCandidate;
+	}
+
+	public void setRoundToBeCandidate(int roundToBeCandidate){
+		this.roundToBeCandidate = roundToBeCandidate;
 	}
 
 	public void createProcesses(ArrayList<String> addresses) throws RemoteException{
@@ -99,6 +105,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	}
 
 	public void shutdown() throws RemoteException{
+		isCandidate = false;
 		try{
 	    UnicastRemoteObject.unexportObject(this, true);
 		}
@@ -131,6 +138,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	}
 
 	public void startCandidate() throws RemoteException{
+		if(round++==roundToBeCandidate)this.isCandidate=true;
 		if(isCandidate){
 			System.out.println("START CANDIDATE");
 			level ++;
