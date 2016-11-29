@@ -69,7 +69,6 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		System.out.println("Synchronizing...");
 		ready = true;
 		for(DA_Process_RMI process: rp){
-			System.out.println("Process: "+process);
 			while(!process.isReady()){
 				long time = System.currentTimeMillis();
 				while(System.currentTimeMillis()-time <1000){}
@@ -142,19 +141,18 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		else{
 			emptyAcksReceived++;
 		}
-		if(acksReceived >= rp.length-1){
+		if(acksReceived+emptyAcksReceived >= rp.length-1){
+			System.out.println("ACKNOWLEDGEMENT READY");
 			if(acksReceived<k){
 				System.out.println("NOT ELECTED");
 				isCandidate = false;
-				startCandidate();
 			}
 			else{
-				System.out.println("ACKNOWLEDGEMENT READY");
 				level++;
-				acksReceived = 0;
-				emptyAcksReceived = 0;
-				startCandidate();
 			}
+			acksReceived = 0;
+			emptyAcksReceived = 0;
+			startCandidate();
 		}
 	}
 
