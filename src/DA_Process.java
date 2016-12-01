@@ -62,7 +62,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 	public void setRoundToBeCandidate(int roundToBeCandidate){
 		this.roundToBeCandidate = roundToBeCandidate;
 	}
-	
+
 	public int getProcessNumber() throws RemoteException{
 		return number;
 	}
@@ -160,15 +160,18 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 						e2.add(e.remove(0));
 					}
 					for(DA_Process_RMI proc: e2){
-						System.out.println("REQUEST SENT TO ONE OF PROCESSES ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
+						System.out.println("REQUEST SENT TO ONE OF PROCESSES" 
+							+"ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
 						proc.requestElection(level,number,id);
 					}
 					for(DA_Process_RMI proc: e){
-						System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
+						System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES "
+							+"NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
 						proc.requestElection(-1,number,id); // -1 causes error later
 					}
 					for(DA_Process_RMI proc: eRest){
-						System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
+						System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES"
+							+" NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
 						proc.requestElection(-1,number,id); // -1 causes error later
 					}
 					int e2Size = e2.size();
@@ -181,7 +184,8 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		else{
 			if (elected) return;
 			for(DA_Process_RMI proc: rp){
-				System.out.println("REQUEST SENT EMPTY BECAUSE THIS IS NOT A CANDIDATE PROCESS: Process " + proc.getProcessNumber());
+				System.out.println("REQUEST SENT EMPTY BECAUSE THIS IS NOT A CANDIDATE PROCESS:"
+							+" Process " + proc.getProcessNumber());
 				proc.requestElection(-1,number,id); // -1 causes error later
 			}
 		}
@@ -195,14 +199,15 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		else{
 			emptyAcksReceived++;
 		}
-		if(acksReceived+emptyAcksReceived >= rp.length-1){
+		if(acksReceived+emptyAcksReceived >= rp.length){
 			System.out.println("ALL ACKs RECEIVED: IS IT ELECTED?");
 			if(acksReceived<k){
 				System.out.println("\nNot elected..\n.");
 				isCandidate = false;
 			}
 			else{
-				level++;
+				if(isCandidate)
+					level++;
 			}
 			acksReceived = 0;
 			emptyAcksReceived = 0;
