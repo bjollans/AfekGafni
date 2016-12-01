@@ -91,8 +91,12 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		ready = true;
 		for(DA_Process_RMI process: rp){
 			while(!process.isReady()){
-				long time = System.currentTimeMillis();
-				while(System.currentTimeMillis()-time <1000){}
+				try{
+					Thread.sleep(1000);
+				}
+				catch(Exception e){
+
+				}
 			}
 		}
 	}
@@ -160,7 +164,7 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 						e2.add(e.remove(0));
 					}
 					for(DA_Process_RMI proc: e2){
-						System.out.println("REQUEST SENT TO ONE OF PROCESSES" 
+						System.out.println("REQUEST SENT TO ONE OF PROCESSES"
 							+"ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
 						proc.requestElection(level,number,id);
 					}

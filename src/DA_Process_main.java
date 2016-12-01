@@ -7,14 +7,15 @@ public class DA_Process_main {
 
 	public static void main(String[] args) {
 		long startTime = System.currentTimeMillis();
-		int registryPort = Integer.parseInt(args[0]);
-		int processNumber = Integer.parseInt(args[1]);
-		int roundToBeCandidate = Integer.parseInt(args[2]);
+		String ownIp = args[0];
+		int registryPort = Integer.parseInt(args[1]);
+		int processNumber = Integer.parseInt(args[2]);
+		int roundToBeCandidate = Integer.parseInt(args[3]);
 
 		ArrayList<String> addresses = new ArrayList<String>();
 
 		int processID = 1;
-		for (int i = 3; i < args.length; i++) {
+		for (int i = 4; i < args.length; i++) {
 			if(processID==processNumber) processID++;
 			System.out.println(args[i]);
 			addresses.add("rmi://"+args[i]+"/proc"+processID);
@@ -26,13 +27,13 @@ public class DA_Process_main {
 			//server
 			//
 
-			System.setProperty("java.rmi.server.hostname","localhost");
+			System.setProperty("java.rmi.server.hostname",ownIp);
 			Registry reg;
 			DA_Process localProcess=new DA_Process(processNumber);
 			try {
 				reg =java.rmi.registry.LocateRegistry.createRegistry(registryPort);
-				String name = "rmi://localhost/"+"proc"+processNumber;
-				Naming.rebind(name,localProcess);
+				String name = "rmi://"+ownIp+"/"+"proc"+processNumber;
+				Naming.bind(name,localProcess);
 				localProcess.setRegistry(reg);
 				localProcess.setName(name);
 			} catch (RemoteException e){
