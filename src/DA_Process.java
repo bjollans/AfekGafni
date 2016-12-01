@@ -8,8 +8,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
 import java.rmi.registry.Registry;
+import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
+
+	private ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	private final UUID id = UUID.randomUUID();
 	private UUID ownerID;
@@ -145,9 +150,9 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 		}
 	}
 
-	public void startCandidate() throws RemoteException{
+	synchronized public void startCandidate() throws RemoteException{
 		if(round++==roundToBeCandidate)this.isCandidate=true;
-		if(isCandidate){
+		if(isCandidate && !elected){
 			System.out.println("Start candidate");
 			level ++;
 			if(level%2==0){
@@ -159,28 +164,51 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 					return;
 				}
 				else{
-					k=Math.min((int)Math.pow(2, level/2), e.size());
-					for(int i=0; i<k; i++){
-						e2.add(e.remove(0));
+					try{
+						k=Math.min((int)Math.pow(2, level/2), e.size());
+						for(int i=0; i<k; i++){
+							e2.add(e.remove(0));
+						}
+						for(DA_Process_RMI proc: e2){
+							System.out.println("REQUEST SENT TO ONE OF PROCESSES"
+								+"ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
+							executor.submit (() ->{
+								try{
+									proc.requestElection(level,number,id);
+								}
+								catch(RemoteException rme){
+
+								}});
+						}
+						for(DA_Process_RMI proc: e){
+							System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES "
+								+"NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
+							executor.submit (() ->{ // -1 causes error later
+								try{
+									proc.requestElection(-1,number,id);
+								}
+								catch(RemoteException rme){
+
+								}});
+						}
+						for(DA_Process_RMI proc: eRest){
+							System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES"
+								+" NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
+							executor.submit (() ->{ // -1 causes error later
+								try{
+									proc.requestElection(-1,number,id);
+								}
+								catch(RemoteException rme){
+
+								}});
+						}
+						int e2Size = e2.size();
+						for(int i=0; i<e2Size; i++){
+							eRest.add(e2.remove(0));
+						}
 					}
-					for(DA_Process_RMI proc: e2){
-						System.out.println("REQUEST SENT TO ONE OF PROCESSES"
-							+"ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
-						proc.requestElection(level,number,id);
-					}
-					for(DA_Process_RMI proc: e){
-						System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES "
-							+"NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
-						proc.requestElection(-1,number,id); // -1 causes error later
-					}
-					for(DA_Process_RMI proc: eRest){
-						System.out.println("REQUEST SENT EMPTY TO ONE OF THOSE PROCESSES"
-							+" NOT ELECTED IN THIS ROUND: Process "+proc.getProcessNumber());
-						proc.requestElection(-1,number,id); // -1 causes error later
-					}
-					int e2Size = e2.size();
-					for(int i=0; i<e2Size; i++){
-						eRest.add(e2.remove(0));
+					catch(java.util.ConcurrentModificationException cme){
+
 					}
 				}
 			}
@@ -190,7 +218,13 @@ public class DA_Process extends UnicastRemoteObject implements DA_Process_RMI{
 			for(DA_Process_RMI proc: rp){
 				System.out.println("REQUEST SENT EMPTY BECAUSE THIS IS NOT A CANDIDATE PROCESS:"
 							+" Process " + proc.getProcessNumber());
-				proc.requestElection(-1,number,id); // -1 causes error later
+				executor.submit (() ->{ // -1 causes error later
+					try{
+						proc.requestElection(-1,number,id);
+					}
+					catch(RemoteException rme){
+
+					}});
 			}
 		}
 	}
